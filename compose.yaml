@@ -1,0 +1,24 @@
+services:
+  app:
+    build: ./
+    ports:
+      - "8000:5000"
+    secrets:
+      - appid
+    environment:
+      - DATABASE_URL=postgresql://user:password@db/flask_app_db
+    depends_on:
+      - db
+
+  db:
+      image: postgres:15.4
+      environment:
+        POSTGRES_USER: user
+        POSTGRES_PASSWORD: password
+        POSTGRES_DB: flask_app_db
+      volumes:
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+
+secrets:
+  appid:
+    file: appid.txt
