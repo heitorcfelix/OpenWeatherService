@@ -39,11 +39,15 @@ def main_route():
 
             user_id = request.form.get('user_id')
             datetime_now = datetime.now()
-            for city in city_codes:
-                rate_limit(limit, interval)
-                asyncio.run(run_city(user_id, datetime_now, city))
-            weather = Weather.query.filter_by(user_id=user_id).all()[0]
-            return make_response({'user_id': weather.user_id, 'timestamp': weather.date_time, 'json_data': weather.json_data}, 200)
+            current_user = Weather.query.filter_by(user_id=user_id).all()
+            if current_user:
+                return make_response(jsonify({'message': 'User already exists'}), 400)
+            else:
+                for city in city_codes:
+                    rate_limit(limit, interval)
+                    asyncio.run(run_city(user_id, datetime_now, city))
+                weather = Weather.query.filter_by(user_id=user_id).all()[0]
+                return make_response({'user_id': weather.user_id, 'timestamp': weather.date_time, 'json_data': weather.json_data}, 200)
         except Exception as e:
             return make_response(jsonify({'message': str(e)}), 500)
 
