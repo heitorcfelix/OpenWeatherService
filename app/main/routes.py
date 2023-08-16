@@ -1,15 +1,16 @@
+import os
 import requests
 import time
-from . import bp
+import httpx
+import asyncio
+from app.main import bp
 from app.extensions import db
 from app.models.weather import Weather
 from app.main.city_codes import city_codes
 from flask import request, jsonify, make_response
 from datetime import datetime
-import httpx
-import asyncio
 
-appID = ''
+appID = os.environ.get('APPID')
 request_counts = []
 
 def rate_limit(limit, interval):
