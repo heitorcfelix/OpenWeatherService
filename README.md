@@ -1,5 +1,5 @@
 # OpenWeatherService
-### Service that collects data from an Open Weather API and store it as a JSON data in a PostgreSQL DB
+### Service that collects data from an Open Weather API and stores it as JSON data in a PostgreSQL DB
 
 ### Requirements
 - Docker >= 24.0.5
@@ -34,3 +34,9 @@ Receives the user defined ID, returns with the percentage of the POST progress I
 ```sh
 curl -XGET 'http://localhost:8000?user_id=1'
 ```
+
+### How to Test
+```sh
+python test/test_app.py
+```
+The test will try all 161 Appendix A cities, it should take considerable time. To change the list of cities, change in [city_codes](./app/main/city_codes.py).
