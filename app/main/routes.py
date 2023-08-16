@@ -26,8 +26,12 @@ def main_route():
     if request.method == 'GET':
         user_id = request.args.get('user_id')
         weather = Weather.query.filter_by(user_id=user_id).all()
-        percentage = round(len(weather) / len(city_codes) * 100, 2)
-        return make_response(jsonify({'percentage': percentage}), 200)
+        if not weather:
+            return make_response(jsonify({'message': 'User not found'}), 404)
+        else:
+            weather = weather[0].json_data
+            percentage = round(len(weather) / len(city_codes) * 100, 2)
+        return make_response(jsonify({'user_id': user_id,'percentage': str(percentage)+'%'}), 200)
     if request.method == 'POST':
         try:
             limit = 60  # Number of requests allowed
@@ -38,7 +42,8 @@ def main_route():
             for city in city_codes:
                 rate_limit(limit, interval)
                 asyncio.run(run_city(user_id, datetime_now, city))
-            return make_response(jsonify({'message': 'OK'}), 200)
+            weather = Weather.query.filter_by(user_id=user_id).all()[0]
+            return make_response({'user_id': weather.user_id, 'timestamp': weather.date_time, 'json_data': weather.json_data}, 200)
         except Exception as e:
             return make_response(jsonify({'message': str(e)}), 500)
 
@@ -49,12 +54,18 @@ async def run_city(user_id, timestamp, city_id):
     request_counts.append(current_time)
     async with httpx.AsyncClient() as client:
         response = await client.get(uri)
+    result = {response.json()['id']: {'temperature': response.json()['main']['temp'], 'humidity': response.json()['main']['humidity']}}
     if response.status_code == requests.codes.ok:
-        result = {}
-        result['cytyID'] = response.json()['id']
-        result['temperature'] = response.json()['main']['temp']
-        result['humidity'] = response.json()['main']['humidity']
-
-        weather = Weather(user_id=user_id, date_time=datetime.now(), json_data=result)
-        db.session.add(weather)
-        db.session.commit()
+        current_user = Weather.query.filter_by(user_id=user_id).all()
+        if current_user:
+            # get the json of the current user in the DB and update with a new key using the city id
+            current_user_json = current_user[0].json_data
+            current_user_json[city_id] = result[city_id]
+            db.session.query(Weather).filter_by(user_id=user_id).update(dict(json_data=current_user_json))
+            db.session.commit()
+        else:
+            # create a new user in the DB
+            print(result)
+            weather = Weather(user_id=user_id, date_time=timestamp, json_data=result)
+            db.session.add(weather)
+            db.session.commit()    
